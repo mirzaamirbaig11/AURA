@@ -1,0 +1,124 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-uppercase mb-0" style="letter-spacing: 3px;">Store Settings</h2>
+    </div>
+
+    <!-- Homepage photos -->
+    <div class="card mb-4" style="max-width: 800px;">
+        <div class="card-body p-4">
+            <h5 class="fw-bold text-uppercase mb-1" style="letter-spacing: 2px;"><i class="fas fa-image me-2 text-danger"></i>Homepage Photos</h5>
+            <p class="text-muted small mb-4">Upload your own photos for the homepage. Changes show instantly — no restart needed.</p>
+
+            <div class="row g-4">
+                {% for key, label, hint, ratio in [
+                    ('hero', 'Top Banner', 'Wide / landscape photo · best 1920 × 1080', '16 / 9'),
+                    ('about', '"Our Story" Photo', 'Tall / portrait photo · best 1200 × 1500', '4 / 5')
+                ] %}
+                <div class="col-md-6">
+                    <div class="fw-semibold mb-2">{{ label }}</div>
+                    <div class="mb-2 rounded overflow-hidden border d-flex align-items-center justify-content-center"
+                         style="aspect-ratio: {{ ratio }}; max-height: 260px; background: linear-gradient(160deg,#1f1f1f,#0b0b0b);">
+                        {% if site_images[key] %}
+                            <img src="{{ site_images[key] }}" alt="{{ label }}" style="width:100%;height:100%;object-fit:cover;">
+                        {% else %}
+                            <span class="text-muted small"><i class="far fa-image me-1"></i> No photo yet (default design)</span>
+                        {% endif %}
+                    </div>
+                    <form method="POST" action="{{ url_for('admin.update_site_images') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="file" name="{{ key }}" accept="image/jpeg,image/png,image/webp" class="form-control form-control-sm mb-2" required>
+                        <small class="text-muted d-block mb-2">{{ hint }}</small>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-aura btn-sm"><i class="fas fa-upload me-1"></i> {{ 'Change' if site_images[key] else 'Upload' }}</button>
+                            {% if site_images[key] %}
+                            <button type="submit" form="remove-{{ key }}" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash me-1"></i> Remove</button>
+                            {% endif %}
+                        </div>
+                    </form>
+                    {% if site_images[key] %}
+                    <form id="remove-{{ key }}" method="POST" action="{{ url_for('admin.update_site_images') }}" onsubmit="return confirm('Remove this photo?');" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="remove" value="{{ key }}">
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" class="card bg-dark border" style="border-color: var(--aura-gray); max-width: 800px;">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="card-body p-4">
+            <h5 class="fw-bold text-uppercase mb-4" style="letter-spacing: 2px;">Store Information</h5>
+
+            <div class="mb-3">
+                <label class="form-label">Store Name</label>
+                <input type="text" name="store_name" class="form-control" value="AURA">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">WhatsApp Number</label>
+                <input type="text" name="whatsapp_number" class="form-control" value="{{ config.WHATSAPP_NUMBER }}">
+                <div class="form-text">Used for contact button and order notifications. Format: 8527756728</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Instagram URL</label>
+                <input type="url" name="instagram_url" class="form-control" value="{{ config.INSTAGRAM_URL }}">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Google Maps URL</label>
+                <input type="url" name="google_maps_url" class="form-control" value="{{ config.GOOGLE_MAPS_URL }}">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Contact Email</label>
+                <input type="email" name="contact_email" class="form-control" value="contact@aura.com">
+            </div>
+
+            <h5 class="fw-bold text-uppercase mb-4 mt-5" style="letter-spacing: 2px;">Shipping Settings</h5>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Free Shipping Threshold ($)</label>
+                    <input type="number" name="free_shipping_threshold" class="form-control" value="1000" min="0">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Standard Shipping Cost ($)</label>
+                    <input type="number" step="0.01" name="standard_shipping" class="form-control" value="50" min="0">
+                </div>
+            </div>
+
+            <h5 class="fw-bold text-uppercase mb-4 mt-5" style="letter-spacing: 2px;">Payment Settings</h5>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input type="checkbox" name="cod_enabled" class="form-check-input" id="codEnabled" checked>
+                    <label class="form-check-label" for="codEnabled">Enable Cash on Delivery</label>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Payment Gateway (Coming Soon)</label>
+                <select class="form-select">
+                    <option value="none" selected>Disabled</option>
+                    <option value="razorpay">Razorpay</option>
+                    <option value="stripe">Stripe</option>
+                </select>
+                <div class="form-text">Payment gateway integration will be available in future updates.</div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-aura">
+                    <i class="fas fa-save me-2"></i> Save Settings
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

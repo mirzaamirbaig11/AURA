@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% from "_macros.html" import product_card, empty_state %}
+
+{%- set cat_name = (categories|selectattr('id', 'equalto', current_category)|map(attribute='name')|first) if current_category else None -%}
+
+{% block title %}{{ cat_name or 'Shop' }} — AURA{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a href="{{ url_for('frontend.index') }}">Home</a></li>
+                <li class="breadcrumb-item {% if not cat_name %}active{% endif %}">{% if cat_name %}<a href="{{ url_for('frontend.shop') }}">Shop</a>{% else %}Shop{% endif %}</li>
+                {% if cat_name %}<li class="breadcrumb-item active" aria-current="page">{{ cat_name }}</li>{% endif %}
+            </ol>
+        </nav>
+        <h1>{% if search %}Results for “{{ search }}”{% else %}{{ cat_name or 'All Products' }}{% endif %}</h1>
+    </div>
+</header>
+
+<div class="container">
+    <div class="row g-4">
+        <!-- Filters: sidebar on desktop, drawer on mobile -->
+        <aside class="col-lg-3">
+            <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="filtersDrawer" aria-labelledby="filtersDrawerLabel" style="--bs-offcanvas-bg: var(--aura-bg);">
+                <div class="offcanvas-header border-bottom">
+                    <h5 class="offcanvas-title mb-0" id="filtersDrawerLabel">Filters</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#filtersDrawer" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body p-3 p-lg-0 d-block">
+                    <div class="filter-panel w-100">
+                        <!-- Categories -->
+                        <div class="mb-4">
+                            <h6 class="filter-title">Categories</h6>
+                            <div class="list-group list-group-flush">
+                                <a href="{{ url_for('frontend.shop', q=search, sort=sort, min_price=min_price, max_price=max_price, size=size) }}"
+                                   class="list-group-item list-group-item-action d-flex justify-content-between border-0 rounded-2 {% if not current_category %}active{% endif %}">All Categories</a>
+                                {% for cat in categories %}
+                                <a href="{{ url_for('frontend.shop', category=cat.id, q=search, sort=sort, min_price=min_price, max_price=max_price, size=size) }}"
+                                   class="list-group-item list-group-item-action border-0 rounded-2 {% if current_category == cat.id %}active{% endif %}">{{ cat.name }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="mb-4">
+                            <h6 class="filter-title">Price (₹)</h6>
+                            <div class="row g-2">
+                                <div class="col-6"><input type="number" min="0" id="min-price" class="form-control form-control-sm" placeholder="Min" value="{{ min_price or '' }}" aria-label="Minimum price"></div>
+                                <div class="col-6"><input type="number" min="0" id="max-price" class="form-control form-control-sm" placeholder="Max" value="{{ max_price or '' }}" aria-label="Maximum price"></div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1 mt-2">
+                                {% for lo, hi, label in [(0, 999, 'Under ₹999'), (1000, 1999, '₹1k–2k'), (2000, None, '₹2k+')] %}
+                                <a class="btn btn-sm btn-ghost border" style="font-size:.72rem;" href="{{ url_for('frontend.shop', category=current_category, q=search, sort=sort, min_price=lo, max_price=hi, size=size) }}">{{ label }}</a>
+                                {% endfor %}
+                            </div>
+                            <button class="btn btn-aura btn-sm w-100 mt-3" type="button" onclick="applyFilters()">Apply Price</button>
+                        </div>
+
+                        <!-- Size -->
+                        <div>
+                            <h6 class="filter-title">Size</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for s in ['XS','S','M','L','XL','XXL'] %}
+                                <a href="{{ url_for('frontend.shop', category=current_category, q=search, sort=sort, min_price=min_price, max_price=max_price, size=(None if size == s else s)) }}"
+                                   class="size-pill text-decoration-none text-center {% if size == s %}active{% endif %}" aria-pressed="{{ 'true' if size == s else 'false' }}">{{ s }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Products -->
+        <section class="col-lg-9">
+            <!-- Toolbar -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-aura-outline btn-sm d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#filtersDrawer" aria-controls="filtersDrawer">
+                        <i class="fas fa-sliders me-1"></i> Filters
+                    </button>
+                    <span class="text-muted small"><strong class="text-white">{{ pagination.total }}</strong> product{{ '' if pagination.total == 1 else 's' }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <label for="sort-select" class="mb-0 small d-none d-sm-inline">Sort</label>
+                    <select id="sort-select" class="form-select form-select-sm" style="min-width: 190px;" onchange="applyFilters()">
+                        <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest first</option>
+                        <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                        <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Most popular</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Active filter chips -->
+            {% if current_category or size or min_price or max_price or search %}
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+                {% if search %}<a class="pay-chip text-decoration-none" href="{{ url_for('frontend.shop', category=current_category, sort=sort, min_price=min_price, max_price=max_price, size=size) }}">“{{ search }}” <i class="fas fa-xmark"></i></a>{% endif %}
+                {% if cat_name %}<a class="pay-chip text-decoration-none" href="{{ url_for('frontend.shop', q=search, sort=sort, min_price=min_price, max_price=max_price, size=size) }}">{{ cat_name }} <i class="fas fa-xmark"></i></a>{% endif %}
+                {% if size %}<a class="pay-chip text-decoration-none" href="{{ url_for('frontend.shop', category=current_category, q=search, sort=sort, min_price=min_price, max_price=max_price) }}">Size {{ size }} <i class="fas fa-xmark"></i></a>{% endif %}
+                {% if min_price or max_price %}<a class="pay-chip text-decoration-none" href="{{ url_for('frontend.shop', category=current_category, q=search, sort=sort, size=size) }}">₹{{ min_price or 0 }} – {{ ('₹' ~ max_price) if max_price else 'any' }} <i class="fas fa-xmark"></i></a>{% endif %}
+                <a href="{{ url_for('frontend.shop') }}" class="small text-danger text-decoration-none ms-1">Clear all</a>
+            </div>
+            {% endif %}
+
+            {% if products %}
+            <div class="row g-3 g-md-4" id="products-grid">
+                {% for product in products %}
+                <div class="col-6 col-md-4">{{ product_card(product, show_category=not current_category) }}</div>
+                {% endfor %}
+            </div>
+
+            {% if pagination.pages > 1 %}
+            <nav class="mt-5" aria-label="Product pages">
+                <ul class="pagination justify-content-center flex-wrap">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('frontend.shop', page=pagination.prev_num, category=current_category, q=search, sort=sort, min_price=min_price, max_price=max_price, size=size) if pagination.has_prev else '#' }}" aria-label="Previous"><i class="fas fa-chevron-left"></i></a>
+                    </li>
+                    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+                        {% if p %}
+                            <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('frontend.shop', page=p, category=current_category, q=search, sort=sort, min_price=min_price, max_price=max_price, size=size) }}">{{ p }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('frontend.shop', page=pagination.next_num, category=current_category, q=search, sort=sort, min_price=min_price, max_price=max_price, size=size) if pagination.has_next else '#' }}" aria-label="Next"><i class="fas fa-chevron-right"></i></a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+                {% if current_category or size or min_price or max_price or search %}
+                    {{ empty_state('fa-magnifying-glass', 'No matches found', 'Try a different size, price range or category.', url_for('frontend.shop'), 'Clear Filters') }}
+                {% else %}
+                    {{ empty_state('fa-shirt', 'New collection dropping soon', "We're stocking the shelves. Check back shortly!", url_for('frontend.index'), 'Back to Home') }}
+                {% endif %}
+            {% endif %}
+        </section>
+    </div>
+</div>
+
+<script>
+function applyFilters() {
+    var params = new URLSearchParams(window.location.search);
+    var min = document.getElementById('min-price').value, max = document.getElementById('max-price').value;
+    min ? params.set('min_price', min) : params.delete('min_price');
+    max ? params.set('max_price', max) : params.delete('max_price');
+    params.set('sort', document.getElementById('sort-select').value);
+    params.delete('page');
+    window.location.search = params.toString();
+}
+</script>
+{% endblock %}

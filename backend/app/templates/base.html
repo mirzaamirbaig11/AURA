@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="description" content="AURA — premium streetwear. Hoodies, tees, jeans, cargoes & more. Cash on Delivery across India.">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo-square.png') }}">
+    <!-- Link preview (WhatsApp / Instagram / Facebook / X) -->
+    <meta property="og:site_name" content="AURA">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}AURA — Premium Streetwear{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Hoodies, tees, jeans & cargoes. Cash on Delivery across India · Free shipping above ₹1,000.{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/og-image.jpg', _external=True) }}{% endblock %}">
+    <meta property="og:image:secure_url" content="{{ self.og_image() }}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="{% block og_image_w %}1200{% endblock %}">
+    <meta property="og:image:height" content="{% block og_image_h %}630{% endblock %}">
+    <meta property="og:image:alt" content="AURA — Premium Streetwear">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ self.og_title() }}">
+    <meta name="twitter:description" content="{{ self.og_description() }}">
+    <meta name="twitter:image" content="{{ self.og_image() }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>{% block title %}AURA - Premium Streetwear{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <a class="visually-hidden-focusable position-absolute p-2 bg-dark text-white" href="#main">Skip to content</a>
+    <div class="announce-bar">
+        <i class="fas fa-truck-fast me-2"></i>Free shipping on orders above ₹1,000 &nbsp;·&nbsp; Cash on Delivery available
+    </div>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('frontend.index') }}">
+                <span class="brand-lockup"><img src="{{ url_for('static', filename='images/logo.png') }}" alt="AURA logo" class="brand-mark" width="44" height="44"><span class="aura-logo">AURA</span></span>
+            </a>
+            <div class="d-flex align-items-center d-lg-none ms-auto me-1">
+                <a href="{{ url_for('frontend.cart') }}" class="nav-link icon-link position-relative" aria-label="Cart">
+                    <i class="fas fa-bag-shopping"></i>
+                    <span class="cart-count-badge position-absolute top-0 start-100 translate-middle badge rounded-pill d-none" style="background:var(--aura-red);font-size:.6rem;">0</span>
+                </a>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link {% if request.endpoint == 'frontend.index' %}active{% endif %}" href="{{ url_for('frontend.index') }}">Home</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.endpoint == 'frontend.shop' and not request.args.get('sort') %}active{% endif %}" href="{{ url_for('frontend.shop') }}">Shop</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.args.get('sort') == 'newest' %}active{% endif %}" href="{{ url_for('frontend.shop', sort='newest') }}">New In</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="catDropdown" role="button" data-bs-toggle="dropdown">Categories</a>
+                        <ul class="dropdown-menu">
+                            {% for cat in nav_categories %}
+                            <li><a class="dropdown-item" href="{{ url_for('frontend.shop', category=cat.id) }}">{{ cat.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <form class="nav-search me-lg-2 my-3 my-lg-0 flex-grow-1 flex-lg-grow-0" action="{{ url_for('frontend.shop') }}" role="search">
+                        <div class="input-group input-group-sm">
+                            <input type="search" name="q" class="form-control" placeholder="Search hoodies, jeans…" aria-label="Search products" value="{{ request.args.get('q', '') }}">
+                            <button class="btn" type="submit" aria-label="Search"><i class="fas fa-search"></i></button>
+                        </div>
+                    </form>
+                    <a href="{{ url_for('frontend.wishlist') }}" class="nav-link icon-link" aria-label="Wishlist" title="Wishlist"><i class="far fa-heart"></i></a>
+                    <a href="{{ url_for('frontend.cart') }}" class="nav-link icon-link position-relative d-none d-lg-inline-flex" aria-label="Cart" title="Cart">
+                        <i class="fas fa-bag-shopping"></i>
+                        <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
+                    </a>
+                    {% if current_user.is_authenticated %}
+                        <div class="dropdown ms-2">
+                            <a class="nav-link icon-link" href="#" role="button" data-bs-toggle="dropdown" aria-label="Account menu" aria-expanded="false">
+                                <i class="far fa-user"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li class="px-3 pt-2 pb-1 small text-muted">Hi, {{ current_user.name.split(' ')[0] if current_user.name else 'there' }} 👋</li>
+                                <li><a class="dropdown-item" href="{{ url_for('frontend.account') }}"><i class="far fa-user me-2"></i>My Account</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('frontend.orders') }}"><i class="fas fa-box me-2"></i>My Orders</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('frontend.wishlist') }}"><i class="far fa-heart me-2"></i>Wishlist</a></li>
+                                {% if current_user.__class__.__name__ == 'Admin' %}
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-arrow-right-from-bracket me-2"></i>Logout</a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-aura btn-sm ms-lg-2 mt-2 mt-lg-0">Login</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main id="main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            <div class="aura-toasts" id="aura-toasts" aria-live="polite" aria-atomic="true">
+                {% for category, message in messages %}
+                    {% set icon = {'success': 'fa-circle-check', 'danger': 'fa-circle-exclamation', 'error': 'fa-circle-exclamation', 'warning': 'fa-triangle-exclamation'}.get(category, 'fa-circle-info') %}
+                    <div class="aura-toast {{ category }}" role="status">
+                        <i class="fas {{ icon }} lead-icon"></i>
+                        <div>{{ message }}</div>
+                        <button type="button" class="toast-close" aria-label="Close"><i class="fas fa-xmark"></i></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-5">
+        <div class="container pt-5 pb-4">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <span class="brand-lockup mb-3"><img src="{{ url_for('static', filename='images/logo.png') }}" alt="AURA logo" class="brand-mark" width="52" height="52" loading="lazy"><span class="aura-logo">AURA</span></span>
+                    <p class="mb-4" style="max-width: 320px;">Premium streetwear built for everyday flex. Designed in India, made to last.</p>
+                    <div class="social-links">
+                        <a href="{{ config.INSTAGRAM_URL }}" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://wa.me/91{{ config.WHATSAPP_NUMBER }}" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                        <a href="{{ config.GOOGLE_MAPS_URL }}" target="_blank" rel="noopener" aria-label="Store location"><i class="fas fa-location-dot"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6>Shop</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li><a href="{{ url_for('frontend.shop') }}">All Products</a></li>
+                        <li><a href="{{ url_for('frontend.shop', sort='newest') }}">New Arrivals</a></li>
+                        <li><a href="{{ url_for('frontend.shop', sort='popular') }}">Best Sellers</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6>Account</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li><a href="{{ url_for('frontend.account') }}">My Profile</a></li>
+                        <li><a href="{{ url_for('frontend.orders') }}">Track Orders</a></li>
+                        <li><a href="{{ url_for('frontend.wishlist') }}">Wishlist</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4 col-md-12">
+                    <h6>Stay in the loop</h6>
+                    <p class="mb-3">New drops, restocks and members-only offers. No spam.</p>
+                    <form class="newsletter-form">
+                        <div class="input-group">
+                            <input type="email" name="email" class="form-control" placeholder="you@example.com" aria-label="Email address" required>
+                            <button class="btn btn-aura" type="submit">Join</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+                <span>&copy; {{ 2026 }} AURA Clothing. All rights reserved.</span>
+                <div class="d-flex gap-2 flex-wrap justify-content-center">
+                    <span class="pay-chip"><i class="fas fa-money-bill-wave"></i> Cash on Delivery</span>
+                    <span class="pay-chip"><i class="fas fa-rotate-left"></i> Easy Returns</span>
+                    <span class="pay-chip"><i class="fas fa-shield-halved"></i> Secure</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- WhatsApp Button -->
+    <a href="https://wa.me/91{{ config.WHATSAPP_NUMBER }}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    window.AURA_CSRF = "{{ csrf_token() }}";
+    (function () {
+        // Send the CSRF token with every same-origin POST/PUT/DELETE made via fetch or jQuery
+        var _fetch = window.fetch;
+        window.fetch = function (input, init) {
+            init = init || {};
+            var method = (init.method || 'GET').toUpperCase();
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            var sameOrigin = !/^https?:\/\//i.test(url) || url.indexOf(location.origin) === 0;
+            if (method !== 'GET' && sameOrigin) {
+                var h = new Headers(init.headers || {});
+                if (!h.has('X-CSRFToken')) h.set('X-CSRFToken', window.AURA_CSRF);
+                init.headers = h;
+                if (!init.credentials) init.credentials = 'same-origin';
+            }
+            return _fetch(input, init);
+        };
+        if (window.jQuery) {
+            jQuery.ajaxSetup({ headers: { 'X-CSRFToken': window.AURA_CSRF } });
+            jQuery.ajaxPrefilter(function (o) { if (typeof o.data === 'string' && /^\s*[\[{]/.test(o.data)) o.contentType = 'application/json'; });
+        }
+    })();
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

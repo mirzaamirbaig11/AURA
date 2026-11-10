@@ -1,0 +1,169 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-uppercase mb-0" style="letter-spacing: 3px;">Inventory</h2>
+    </div>
+
+    <!-- Filters -->
+    <div class="card bg-dark border mb-4" style="border-color: var(--aura-gray);">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Search Product</label>
+                    <input type="text" name="q" class="form-control" value="{{ search }}" placeholder="Product name...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Low Stock Threshold</label>
+                    <input type="number" name="low_stock" class="form-control" value="{{ low_stock or 10 }}" min="1" max="100">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-aura w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="card bg-dark border" style="border-color: var(--aura-gray);">
+        <div class="card-body p-0">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Size</th>
+                            <th>Quantity</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product, size, inv in pagination.items %}
+                        <tr class="{% if inv.quantity == 0 %}bg-danger bg-opacity-10{% elif inv.quantity <= (low_stock or 10) %}bg-warning bg-opacity-10{% endif %}">
+                            <td>
+                                <a href="{{ url_for('admin.edit_product', id=product.id) }}" class="text-decoration-none text-white fw-bold">{{ product.name }}</a>
+                            </td>
+                            <td>{{ size.size_label }}</td>
+                            <td>
+                                <span class="fw-bold {% if inv.quantity == 0 %}text-danger{% elif inv.quantity <= (low_stock or 10) %}text-warning{% else %}text-success{% endif %}">{{ inv.quantity }}</span>
+                            </td>
+                            <td>
+                                {% if inv.quantity == 0 %}
+                                <span class="badge bg-danger">Out of Stock</span>
+                                {% elif inv.quantity <= (low_stock or 10) %}
+                                <span class="badge bg-warning text-dark">Low Stock</span>
+                                {% else %}
+                                <span class="badge bg-success">In Stock</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-outline-light btn-sm edit-inventory" data-inv-id="{{ inv.id }}" data-qty="{{ inv.quantity }}">
+                                    <i class="fas fa-edit"></i> Update
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav class="p-3 border-top" style="border-color: var(--aura-gray);">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.inventory', page=pagination.prev_num, q=search, low_stock=low_stock) }}">Previous</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    {% endif %}
+
+                    {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                        {% if p %}
+                            {% if p == pagination.page %}
+                                <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin.inventory', page=p, q=search, low_stock=low_stock) }}">{{ p }}</a>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.inventory', page=pagination.next_num, q=search, low_stock=low_stock) }}">Next</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-warehouse fa-3x text-muted mb-3"></i>
+                <h4>No inventory records found</h4>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Edit Inventory Modal -->
+<div class="modal fade" id="inventoryModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Update Inventory</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="inventoryForm">
+                <div class="modal-body">
+                    <input type="hidden" name="inv_id" id="inv-id">
+                    <div class="mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" name="quantity" id="inv-qty" class="form-control" min="0" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-aura">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('.edit-inventory').on('click', function() {
+        $('#inv-id').val($(this).data('inv-id'));
+        $('#inv-qty').val($(this).data('qty'));
+        $('#inventoryModal').modal('show');
+    });
+
+    $('#inventoryForm').on('submit', function(e) {
+        e.preventDefault();
+        var invId = $('#inv-id').val();
+        var qty = $('#inv-qty').val();
+
+        $.post('/admin/inventory/update/' + invId, {quantity: qty}, function(res) {
+            if (res.success) {
+                location.reload();
+            } else {
+                alert('Failed to update inventory');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

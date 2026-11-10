@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-transparent">
+                    <h4 class="fw-bold text-uppercase mb-0" style="letter-spacing: 2px;">Checkout</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Order Summary -->
+                    <div class="row">
+                        <div class="col-md-7">
+                            <h5 class="fw-bold mb-3">Order Summary</h5>
+                            {% for item in items %}
+                            <div class="d-flex gap-3 mb-3 pb-3 border-bottom">
+                                {% if item.product.primary_image %}
+                                <img src="{{ url_for('static', filename='uploads/products/' + item.product.primary_image) }}"
+                                     alt="{{ item.product.name }}" class="rounded" style="width: 80px; height: 80px; object-fit: cover;">
+                                {% else %}
+                                <div class="rounded bg-gray d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                    <span class="text-muted">No Image</span>
+                                </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ item.product.name }}</h6>
+                                    <small class="text-muted">Size: {{ item.size.size_label }}</small>
+                                    <div class="d-flex justify-content-between mt-1">
+                                        <span>Qty: {{ item.quantity }}</span>
+                                        <span>₹{{ (item.line_total)|inr }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotal</span>
+                                <span>₹{{ (subtotal)|inr }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Shipping</span>
+                                <span>{% if shipping == 0 %}Free{% else %}₹{{ (shipping)|inr }}{% endif %}</span>
+                            </div>
+                            <div class="d-flex justify-content-between fw-bold fs-5 mb-3" style="border-top: 2px solid var(--aura-gray); padding-top: 10px;">
+                                <span>Total</span>
+                                <span style="color: var(--aura-red);">₹{{ (total)|inr }}</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <h5 class="fw-bold mb-3">Payment Method</h5>
+
+                            <form method="POST" action="{{ url_for('payment.checkout') }}" id="checkout-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="address_id" id="address_id">
+
+                                <!-- Address Selection -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Delivery Address</label>
+                                    {% if addresses %}
+                                    <div class="mb-3">
+                                        <select name="address_id" class="form-select bg-dark text-white border" required>
+                                            <option value="">Select saved address</option>
+                                            {% for addr in addresses %}
+                                            <option value="{{ addr.id }}" {% if addr.is_default %}selected{% endif %}>
+                                                {{ addr.name }}, {{ addr.address_line }}, {{ addr.city }}, {{ addr.state }} {{ addr.pincode }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="new_address" name="new_address">
+                                        <label class="form-check-label" for="new_address">Use a new address</label>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-info">No saved addresses. Please enter a new address below.</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- New Address Fields (hidden by default) -->
+                                <div id="new-address-fields" style="display: {% if not addresses %}block{% else %}none{% endif %};">
+                                    <h6 class="fw-bold mb-3">New Delivery Address</h6>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label">Full Name *</label>
+                                            <input type="text" name="name" class="form-control" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Phone *</label>
+                                            <input type="tel" name="phone" class="form-control" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Email *</label>
+                                            <input type="email" name="email" class="form-control" value="{{ current_user.email }}" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Address Line *</label>
+                                            <textarea name="address" class="form-control" rows="2" required></textarea>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">City *</label>
+                                            <input type="text" name="city" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">State *</label>
+                                            <input type="text" name="state" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">PIN Code *</label>
+                                            <input type="text" name="pincode" class="form-control" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Notes -->
+                                <div class="mb-4">
+                                    <label class="form-label">Order Notes (Optional)</label>
+                                    <textarea name="notes" class="form-control" rows="2" placeholder="Special instructions for delivery..."></textarea>
+                                </div>
+
+                                <!-- Payment Method Selection -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Choose Payment Method</label>
+                                    <div class="row g-3">
+                                        {% if enable_online_payment %}
+                                        <div class="col-12 col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="payment_method" id="payment_stripe" value="stripe" checked>
+                                                <label class="form-check-label fw-bold" for="payment_stripe">
+                                                    <i class="fab fa-cc-stripe me-2" style="color: #635bff;"></i>
+                                                    Card / UPI / Wallet (Stripe)
+                                                </label>
+                                                <small class="form-text text-muted d-block ms-3">Secure payment via Stripe</small>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <input type="hidden" name="payment_method" value="cod">
+                                        {% endif %}
+                                        <div class="col-12 col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="payment_method" id="payment_cod" value="cod"{% if not enable_online_payment %} checked{% endif %}>
+                                                <label class="form-check-label fw-bold" for="payment_cod">
+                                                    <i class="fas fa-money-bill-wave me-2" style="color: #4ade80;"></i>
+                                                    Cash on Delivery
+                                                </label>
+                                                <small class="form-text text-muted d-block ms-3">Pay when you receive your order</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Coupon -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Coupon Code</label>
+                                    <div class="input-group">
+                                        <input type="text" name="coupon_code" id="coupon_code" class="form-control" placeholder="Enter coupon code">
+                                        <button type="button" class="btn btn-aura-outline" id="apply-coupon-btn">Apply</button>
+                                    </div>
+                                    <div id="coupon-message" class="mt-2"></div>
+                                </div>
+
+                                <div id="coupon-applied" style="display: none;" class="alert alert-success mb-3">
+                                    Coupon <strong id="applied-coupon-code"></strong> applied! Discount: ₹<span id="coupon-discount">0</span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" id="remove-coupon-btn">Remove</button>
+                                </div>
+
+                                <button type="submit" class="btn btn-aura w-100 btn-lg fw-bold" id="place-order-btn">
+                                    <span id="btn-text">Place Order</span>
+                                    <span id="btn-loading" class="d-none"><i class="fas fa-spinner fa-spin me-2"></i>Processing...</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coupon Info -->
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="fw-bold text-uppercase mb-3" style="letter-spacing: 2px;">Order Details</h6>
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <i class="fas fa-truck fa-2x text-muted mb-2"></i>
+                            <p class="mb-1 fw-bold">Free Shipping</p>
+                            <small class="text-muted">On orders over ₹1000</small>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="fas fa-undo fa-2x text-muted mb-2"></i>
+                            <p class="mb-1 fw-bold">Easy Returns</p>
+                            <small class="text-muted">7-day return policy</small>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="fas fa-headset fa-2x text-muted mb-2"></i>
+                            <p class="mb-1 fw-bold">Support</p>
+                            <small class="text-muted">24/7 customer support</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle new address fields
+    const newAddressCheckbox = document.getElementById('new_address');
+    const newAddressFields = document.getElementById('new-address-fields');
+    const addressSelect = document.querySelector('select[name="address_id"]');
+
+    if (newAddressCheckbox) {
+        newAddressCheckbox.addEventListener('change', function() {
+            newAddressFields.style.display = this.checked ? 'block' : 'none';
+            addressSelect.required = !this.checked;
+        });
+    }
+
+    // Coupon application
+    const applyCouponBtn = document.getElementById('apply-coupon-btn');
+    const couponCodeInput = document.getElementById('coupon_code');
+    const couponMessage = document.getElementById('coupon-message');
+    const couponApplied = document.getElementById('coupon-applied');
+    const appliedCouponCode = document.getElementById('applied-coupon-code');
+    const couponDiscount = document.getElementById('coupon-discount');
+    const removeCouponBtn = document.getElementById('remove-coupon-btn');
+    const placeOrderBtn = document.getElementById('place-order-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnLoading = document.getElementById('btn-loading');
+
+    let appliedCoupon = null;
+
+    applyCouponBtn?.addEventListener('click', async function() {
+        const code = couponCodeInput.value.trim().toUpperCase();
+        if (!code) return;
+
+        applyCouponBtn.disabled = true;
+        applyCouponBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            const response = await fetch('{{ url_for("frontend.apply_coupon") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: `code=${encodeURIComponent(code)}`
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                appliedCoupon = data.coupon_code;
+                appliedCouponCode.textContent = data.coupon_code;
+                couponDiscount.textContent = data.discount.toFixed(2);
+                couponApplied.style.display = 'block';
+                couponMessage.innerHTML = `<div class="text-success">${data.message}</div>`;
+                couponCodeInput.value = '';
+            } else {
+                couponMessage.innerHTML = `<div class="text-danger">${data.message}</div>`;
+            }
+        } catch (e) {
+            couponMessage.innerHTML = `<div class="text-danger">Error applying coupon</div>`;
+        }
+
+        applyCouponBtn.disabled = false;
+        applyCouponBtn.innerHTML = 'Apply';
+    });
+
+    removeCouponBtn?.addEventListener('click', function() {
+        appliedCoupon = null;
+        couponApplied.style.display = 'none';
+        couponMessage.innerHTML = '';
+    });
+
+    // Form submission
+    const checkoutForm = document.getElementById('checkout-form');
+    checkoutForm?.addEventListener('submit', function(e) {
+        const paymentMethod = document.querySelector('input[name="payment_method"]:checked')?.value;
+        if (paymentMethod === 'stripe') {
+            // Let Stripe handle it - the server will redirect to Stripe checkout
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            placeOrderBtn.disabled = true;
+        }
+    });
+});
+</script>
+{% endblock %}

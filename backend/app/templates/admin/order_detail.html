@@ -1,0 +1,227 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-uppercase mb-0" style="letter-spacing: 3px;">Order #{{ order.order_number }}</h2>
+        <a href="{{ url_for('admin.orders') }}" class="btn btn-aura-outline">
+            <i class="fas fa-arrow-left me-2"></i> Back to Orders
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <!-- Order Items -->
+            <div class="card bg-dark border mb-4" style="border-color: var(--aura-gray);">
+                <div class="card-header bg-transparent border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-uppercase mb-0" style="letter-spacing: 2px;">Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% for item in order.items %}
+                    <div class="border-bottom d-flex align-items-center p-3" style="border-color: var(--aura-gray);">
+                        <div class="me-3" style="width: 80px; height: 80px; overflow: hidden; background-color: #222;">
+                            {% set primary_img = order_images.get(item.product_id) %}
+                            {% if primary_img %}
+                                <img src="{{ url_for('static', filename='uploads/products/' + primary_img) }}" class="img-fluid w-100 h-100" style="object-fit: cover;" alt="{{ item.product_name }}">
+                            {% else %}
+                                <div class="d-flex align-items-center justify-content-center h-100 text-muted">No Image</div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ item.product_name }}</h6>
+                            <small class="text-muted">Size: {{ item.size_label }} | Qty: {{ item.quantity }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">₹{{ (item.price)|inr }}</div>
+                            <small class="text-muted">₹{{ (item.price * item.quantity)|inr }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Customer Info -->
+            <div class="card bg-dark border mb-4" style="border-color: var(--aura-gray);">
+                <div class="card-header bg-transparent border-secondary">
+                    <h5 class="fw-bold text-uppercase mb-0" style="letter-spacing: 2px;">Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Name:</strong> {{ order.customer_name }}</p>
+                            <p class="mb-1"><strong>Email:</strong> {{ order.customer_email }}</p>
+                            <p class="mb-1"><strong>Phone:</strong> {{ order.customer_phone }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Address:</strong> {{ order.delivery_address }}</p>
+                            <p class="mb-1"><strong>City:</strong> {{ order.delivery_city }}</p>
+                            <p class="mb-1"><strong>State:</strong> {{ order.delivery_state }}</p>
+                            <p class="mb-0"><strong>PIN:</strong> {{ order.delivery_pincode }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if order.order_notes %}
+            <div class="card bg-dark border mb-4" style="border-color: var(--aura-gray);">
+                <div class="card-header bg-transparent border-secondary">
+                    <h5 class="fw-bold text-uppercase mb-0" style="letter-spacing: 2px;">Order Notes</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ order.order_notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Order Summary -->
+            <div class="card bg-dark border sticky-top mb-4" style="top: 100px; border-color: var(--aura-gray);">
+                <div class="card-header bg-transparent border-secondary">
+                    <h5 class="fw-bold text-uppercase mb-0" style="letter-spacing: 2px;">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Subtotal</span>
+                        <span>₹{{ (order.subtotal)|inr }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Shipping</span>
+                        <span>₹{{ (order.shipping_charge)|inr }}</span>
+                    </div>
+                    {% if order.discount_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-3 text-success">
+                        <span>Discount</span>
+                        <span>-₹{{ (order.discount_amount)|inr }}</span>
+                    </div>
+                    {% endif %}
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="fw-bold">Total</span>
+                        <span class="fw-bold text-danger h5 mb-0">₹{{ (order.total_amount)|inr }}</span>
+                    </div>
+                    <div class="text-muted small mb-3">
+                        Payment: {{ order.payment_method }}<br>
+                        Status: <span class="badge {% if order.payment_status == 'Paid' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ order.payment_status }}</span>
+                    </div>
+
+                    <!-- Status Update -->
+                    <h6 class="fw-bold text-uppercase mb-3" style="letter-spacing: 1px;">Update Status</h6>
+                    <form method="POST" action="{{ url_for('admin.update_order_status', id=order.id) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="status" class="form-select mb-2" required>
+                            <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="Confirmed" {% if order.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+                            <option value="Processing" {% if order.status == 'Processing' %}selected{% endif %}>Processing</option>
+                            <option value="Shipped" {% if order.status == 'Shipped' %}selected{% endif %}>Shipped</option>
+                            <option value="Delivered" {% if order.status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                            <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                        <button type="submit" class="btn btn-aura w-100">Update Status</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Order Timeline -->
+            <div class="card bg-dark border" style="border-color: var(--aura-gray);">
+                <div class="card-header bg-transparent border-secondary">
+                    <h5 class="fw-bold text-uppercase mb-0" style="letter-spacing: 2px;">Order Timeline</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="timeline">
+                        <div class="timeline-item p-3 border-bottom {% if order.status in ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'] %}bg-success bg-opacity-10{% endif %}" style="border-color: var(--aura-gray);">
+                            <div class="d-flex align-items-center">
+                                <div class="timeline-marker {% if order.status in ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'] %}bg-success{% else %}bg-secondary{% endif %} me-3"></div>
+                                <div>
+                                    <div class="fw-bold">Order Placed</div>
+                                    <small class="text-muted">{{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% if order.status in ['Confirmed', 'Processing', 'Shipped', 'Delivered'] %}
+                        <div class="timeline-item p-3 border-bottom {% if order.status in ['Processing', 'Shipped', 'Delivered'] %}bg-success bg-opacity-10{% endif %}" style="border-color: var(--aura-gray);">
+                            <div class="d-flex align-items-center">
+                                <div class="timeline-marker {% if order.status in ['Processing', 'Shipped', 'Delivered'] %}bg-success{% else %}bg-secondary{% endif %} me-3"></div>
+                                <div>
+                                    <div class="fw-bold">Confirmed</div>
+                                    <small class="text-muted">Order confirmed by store</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if order.status in ['Processing', 'Shipped', 'Delivered'] %}
+                        <div class="timeline-item p-3 border-bottom {% if order.status in ['Shipped', 'Delivered'] %}bg-success bg-opacity-10{% endif %}" style="border-color: var(--aura-gray);">
+                            <div class="d-flex align-items-center">
+                                <div class="timeline-marker {% if order.status in ['Shipped', 'Delivered'] %}bg-success{% else %}bg-secondary{% endif %} me-3"></div>
+                                <div>
+                                    <div class="fw-bold">Processing</div>
+                                    <small class="text-muted">Order is being prepared</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if order.status in ['Shipped', 'Delivered'] %}
+                        <div class="timeline-item p-3 border-bottom {% if order.status == 'Delivered' %}bg-success bg-opacity-10{% endif %}" style="border-color: var(--aura-gray);">
+                            <div class="d-flex align-items-center">
+                                <div class="timeline-marker {% if order.status == 'Delivered' %}bg-success{% else %}bg-secondary{% endif %} me-3"></div>
+                                <div>
+                                    <div class="fw-bold">Shipped</div>
+                                    <small class="text-muted">Order has been shipped</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if order.status == 'Delivered' %}
+                        <div class="timeline-item p-3 bg-success bg-opacity-10">
+                            <div class="d-flex align-items-center">
+                                <div class="timeline-marker bg-success me-3"></div>
+                                <div>
+                                    <div class="fw-bold">Delivered</div>
+                                    <small class="text-muted">Order delivered successfully</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if order.status == 'Cancelled' %}
+                        <div class="timeline-item p-3 bg-danger bg-opacity-10">
+                            <div class="d-flex align-items-center">
+                                <div class="timeline-marker bg-danger me-3"></div>
+                                <div>
+                                    <div class="fw-bold">Cancelled</div>
+                                    <small class="text-muted">Order was cancelled</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--aura-gray);
+}
+.timeline-marker {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    left: -22px;
+    border: 2px solid var(--aura-black);
+}
+</style>
+{% endblock %}

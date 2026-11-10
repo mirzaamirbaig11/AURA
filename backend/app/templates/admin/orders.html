@@ -1,0 +1,129 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-uppercase mb-0" style="letter-spacing: 3px;">Orders</h2>
+    </div>
+
+    <!-- Filters -->
+    <div class="card bg-dark border mb-4" style="border-color: var(--aura-gray);">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" value="{{ search }}" placeholder="Order #, Customer name, Email...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="Pending" {% if status == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="Confirmed" {% if status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+                        <option value="Processing" {% if status == 'Processing' %}selected{% endif %}>Processing</option>
+                        <option value="Shipped" {% if status == 'Shipped' %}selected{% endif %}>Shipped</option>
+                        <option value="Delivered" {% if status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                        <option value="Cancelled" {% if status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-aura w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card bg-dark border" style="border-color: var(--aura-gray);">
+        <div class="card-body p-0">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Payment</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in pagination.items %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('admin.order_detail', id=order.id) }}" class="text-decoration-none fw-bold">{{ order.order_number }}</a>
+                            </td>
+                            <td>
+                                <div>{{ order.customer_name }}</div>
+                                <small class="text-muted">{{ order.customer_email }}</small>
+                            </td>
+                            <td>{{ order.items|length }} item{% if order.items|length != 1 %}s{% endif %}</td>
+                            <td class="fw-bold text-danger">₹{{ (order.total_amount)|inr }}</td>
+                            <td>
+                                <span class="badge {% if order.status == 'Delivered' %}bg-success{% elif order.status == 'Cancelled' %}bg-danger{% elif order.status == 'Shipped' %}bg-primary{% elif order.status == 'Processing' %}bg-info{% elif order.status == 'Confirmed' %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-3 py-2">
+                                    {{ order.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {% if order.payment_status == 'Paid' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ order.payment_status }}</span>
+                            </td>
+                            <td class="small">{{ order.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                            <td>
+                                <a href="{{ url_for('admin.order_detail', id=order.id) }}" class="btn btn-outline-light btn-sm"><i class="fas fa-eye"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav class="p-3 border-top" style="border-color: var(--aura-gray);">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.orders', page=pagination.prev_num, q=search, status=status) }}">Previous</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    {% endif %}
+
+                    {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                        {% if p %}
+                            {% if p == pagination.page %}
+                                <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin.orders', page=p, q=search, status=status) }}">{{ p }}</a>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.orders', page=pagination.next_num, q=search, status=status) }}">Next</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                <h4>No orders found</h4>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

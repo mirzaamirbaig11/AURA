@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% from "_macros.html" import product_card, empty_state %}
+
+{% block content %}
+{%- set cat_icons = {'Jersey': 'fa-futbol', 'Jeans': 'fa-person', 'T-Shirts': 'fa-shirt', 'Shirts': 'fa-user-tie', 'Hoodies': 'fa-mitten', 'Cargoes': 'fa-person-walking', 'Trousers': 'fa-person-walking', 'Jackets': 'fa-vest'} -%}
+
+<!-- Hero -->
+<section class="hero-section"{% if site_images.hero %} style="background: linear-gradient(100deg, rgba(10,10,10,.92) 0%, rgba(10,10,10,.65) 45%, rgba(10,10,10,.2) 100%), url('{{ site_images.hero }}') center / cover no-repeat;"{% endif %}>
+    <div class="container">
+        <div class="row">
+            <div class="col-xl-7 col-lg-8">
+                <span class="hero-kicker"><span class="dot"></span> New season drop is live</span>
+                <h1 class="hero-title">Wear your <span class="accent">aura.</span></h1>
+                <p class="hero-sub mb-4">Premium streetwear for people who don't blend in. Heavyweight fabrics, bold fits, everyday comfort.</p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{{ url_for('frontend.shop') }}" class="btn btn-aura btn-lg">Shop Now <i class="fas fa-arrow-right ms-2"></i></a>
+                    <a href="{{ url_for('frontend.shop', sort='newest') }}" class="btn btn-aura-outline btn-lg">New Arrivals</a>
+                </div>
+                <div class="hero-stats">
+                    <div><strong>{{ categories|length }}+</strong><span>Collections</span></div>
+                    <div><strong>COD</strong><span>Pay on delivery</span></div>
+                    <div><strong>7 Days</strong><span>Easy returns</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Trust strip -->
+<section class="trust-strip">
+    <div class="container">
+        <div class="row g-0">
+            <div class="col-6 col-lg-3"><div class="trust-item"><i class="fas fa-truck-fast"></i><div><strong>Free Shipping</strong><span>On orders above ₹1,000</span></div></div></div>
+            <div class="col-6 col-lg-3"><div class="trust-item"><i class="fas fa-money-bill-wave"></i><div><strong>Cash on Delivery</strong><span>Pay when it arrives</span></div></div></div>
+            <div class="col-6 col-lg-3"><div class="trust-item"><i class="fas fa-rotate-left"></i><div><strong>Easy Returns</strong><span>7-day hassle-free</span></div></div></div>
+            <div class="col-6 col-lg-3"><div class="trust-item"><i class="fab fa-whatsapp"></i><div><strong>WhatsApp Support</strong><span>Quick replies, real humans</span></div></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories -->
+{% if categories %}
+<section class="section">
+    <div class="container">
+        <div class="section-head reveal">
+            <div>
+                <span class="section-eyebrow">Collections</span>
+                <h2 class="section-title">Shop by Category</h2>
+            </div>
+            <a href="{{ url_for('frontend.shop') }}" class="btn btn-aura-outline btn-sm">View All</a>
+        </div>
+        <div class="row g-3 g-md-4">
+            {% for cat in categories %}
+            <div class="col-6 col-md-4 col-lg-3 reveal">
+                <a href="{{ url_for('frontend.shop', category=cat.id) }}" class="category-tile">
+                    {% if cat.image_filename %}
+                        <img src="{{ url_for('static', filename='uploads/categories/' + cat.image_filename) }}" alt="{{ cat.name }}" loading="lazy">
+                    {% else %}
+                        <div class="tile-bg"></div>
+                        <i class="fas {{ cat_icons.get(cat.name, 'fa-shirt') }} tile-icon" aria-hidden="true"></i>
+                    {% endif %}
+                    <div class="tile-label">
+                        <h5>{{ cat.name }}</h5>
+                        <span class="arrow"><i class="fas fa-arrow-right"></i></span>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Featured -->
+{% if featured_products %}
+<section class="section section-alt">
+    <div class="container">
+        <div class="section-head reveal">
+            <div>
+                <span class="section-eyebrow">Hand-picked</span>
+                <h2 class="section-title">Featured Drops</h2>
+            </div>
+            <a href="{{ url_for('frontend.shop') }}" class="btn btn-aura-outline btn-sm">View All</a>
+        </div>
+        <div class="row g-3 g-md-4">
+            {% for product in featured_products %}
+            <div class="col-6 col-md-4 col-lg-3 reveal">{{ product_card(product, show_category=true) }}</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- New Arrivals -->
+<section class="section">
+    <div class="container">
+        <div class="section-head reveal">
+            <div>
+                <span class="section-eyebrow">Just landed</span>
+                <h2 class="section-title">New Arrivals</h2>
+            </div>
+            <a href="{{ url_for('frontend.shop', sort='newest') }}" class="btn btn-aura-outline btn-sm">Shop New</a>
+        </div>
+        {% if new_arrivals %}
+        <div class="row g-3 g-md-4">
+            {% for product in new_arrivals %}
+            <div class="col-6 col-md-4 col-lg-3 reveal">{{ product_card(product, show_category=true) }}</div>
+            {% endfor %}
+        </div>
+        {% else %}
+            {{ empty_state('fa-shirt', 'Fresh drops coming soon', 'Our new collection is on its way. Check back shortly or join the list below to get notified first.') }}
+        {% endif %}
+    </div>
+</section>
+
+<!-- About -->
+<section class="section section-alt">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6 reveal">
+                <span class="section-eyebrow">Our story</span>
+                <h2 class="section-title mb-4">Made for the streets. Built to last.</h2>
+                <p class="text-muted mb-4">AURA blends contemporary design with street culture. Every piece is cut from premium fabric, pre-shrunk, and finished with details you'll notice every time you wear it.</p>
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6"><div class="d-flex gap-3"><i class="fas fa-gem text-danger mt-1"></i><div><strong class="d-block">Premium fabrics</strong><small class="text-muted">240+ GSM cotton, built for daily wear</small></div></div></div>
+                    <div class="col-sm-6"><div class="d-flex gap-3"><i class="fas fa-ruler-combined text-danger mt-1"></i><div><strong class="d-block">True-to-size fits</strong><small class="text-muted">Relaxed & oversized silhouettes</small></div></div></div>
+                </div>
+                <a href="{{ url_for('frontend.shop') }}" class="btn btn-aura">Explore the Collection</a>
+            </div>
+            <div class="col-lg-6 reveal">
+                <div class="about-visual"{% if site_images.about %} style="background: url('{{ site_images.about }}') center / cover no-repeat;"{% endif %}><span class="about-tag">AURA.</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Newsletter -->
+<section class="section">
+    <div class="container">
+        <div class="newsletter-box reveal">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-6">
+                    <span class="section-eyebrow">Members only</span>
+                    <h2 class="section-title mb-2">Join the AURA Community</h2>
+                    <p class="text-muted mb-0">Early access to drops, restock alerts and exclusive offers — straight to your inbox.</p>
+                </div>
+                <div class="col-lg-6">
+                    <form id="newsletter-form" class="ms-lg-auto">
+                        <div class="input-group input-group-lg">
+                            <input type="email" name="email" class="form-control" placeholder="Enter your email" aria-label="Email address" required>
+                            <button class="btn btn-aura px-4" type="submit">Subscribe</button>
+                        </div>
+                        <small class="text-muted d-block mt-2">No spam. Unsubscribe anytime.</small>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

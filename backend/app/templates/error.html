@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} — AURA{% endblock %}
+{% block content %}
+<section class="auth-wrap">
+    <div class="container text-center" style="max-width: 560px;">
+        <div class="hero-title mb-2" style="font-size: clamp(5rem, 18vw, 9rem); color: var(--aura-red);">{{ code }}</div>
+        <h2 class="mb-3">{{ title }}</h2>
+        <p class="text-muted mb-4">{{ message }}</p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <a href="{{ url_for('frontend.index') }}" class="btn btn-aura">Back to Home</a>
+            <a href="{{ url_for('frontend.shop') }}" class="btn btn-aura-outline">Browse Shop</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

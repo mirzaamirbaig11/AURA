@@ -1,0 +1,166 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-uppercase mb-0" style="letter-spacing: 2px;">Reviews</h2>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.reviews', status='pending') }}" class="btn {% if status == 'pending' %}btn-aura{% else %}btn-aura-outline{% endif %}">Pending</a>
+            <a href="{{ url_for('admin.reviews', status='approved') }}" class="btn {% if status == 'approved' %}btn-aura{% else %}btn-aura-outline{% endif %}">Approved</a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card bg-dark border mb-4" style="border-color: var(--aura-gray);">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <input type="hidden" name="status" value="{{ status }}">
+                <div class="col-md-6">
+                    <input type="text" name="q" class="form-control bg-dark text-white border" style="border-color: var(--aura-gray);" placeholder="Search product or customer..." value="{{ search }}">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-aura w-100">Filter</button>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('admin.reviews', status=status) }}" class="btn btn-aura-outline w-100">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reviews Table -->
+    <div class="card bg-dark border" style="border-color: var(--aura-gray);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0">
+                    <thead style="background-color: var(--aura-dark); border-color: var(--aura-gray);">
+                        <tr>
+                            <th>Product</th>
+                            <th>Customer</th>
+                            <th>Rating</th>
+                            <th>Comment</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for review in pagination.items %}
+                        <tr style="border-color: var(--aura-gray);">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if review.product.images %}
+                                        <img src="{{ url_for('static', filename='uploads/products/' + review.product.images[0].image_filename) }}" alt="{{ review.product.name }}" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded bg-gray d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-image text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <a href="{{ url_for('frontend.product_detail', id=review.product.id) }}" class="text-decoration-none text-white" target="_blank">{{ review.product.name }}</a>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="fw-bold">{{ review.customer.name }}</div>
+                                    <small class="text-muted">{{ review.customer.email }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-1">
+                                    {% for i in range(1, 6) %}
+                                        <i class="fas fa-star {% if i <= review.rating %}text-warning{% else %}text-muted{% endif %}" style="font-size: 0.9rem;"></i>
+                                    {% endfor %}
+                                    <span class="ms-1">{{ review.rating }}/5</span>
+                                </div>
+                            </td>
+                            <td class="text-truncate" style="max-width: 300px;">{{ review.comment or '<em class="text-muted">No comment</em>'|safe }}</td>
+                            <td>{{ review.created_at.strftime('%b %d, %Y %H:%M') }}</td>
+                            <td>
+                                <span class="badge {% if review.is_approved %}bg-success{% else %}bg-warning{% endif %}">
+                                    {% if review.is_approved %}Approved{% else %}Pending{% endif %}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                {% if not review.is_approved %}
+                                <button type="button" class="btn btn-sm btn-success me-1" onclick="approveReview({{ review.id }})" title="Approve">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="rejectReview({{ review.id }})" title="Reject">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% else %}
+                                <span class="text-muted">Approved</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No reviews found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <div class="card-footer bg-transparent" style="border-color: var(--aura-gray);">
+                <nav aria-label="Reviews pagination">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark text-white border" style="border-color: var(--aura-gray);" href="{{ url_for('admin.reviews', page=pagination.prev_num, status=status, q=search) }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                    <a class="page-link bg-dark text-white border" style="border-color: var(--aura-gray);" href="{{ url_for('admin.reviews', page=page_num, status=status, q=search) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link bg-dark text-white border" style="border-color: var(--aura-gray);">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark text-white border" style="border-color: var(--aura-gray);" href="{{ url_for('admin.reviews', page=pagination.next_num, status=status, q=search) }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function approveReview(id) {
+    if (confirm('Approve this review?')) {
+        fetch('{{ url_for("admin.approve_review", id=0) }}'.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            }
+        }).then(r => r.json()).then(data => {
+            if (data.success) location.reload();
+        });
+    }
+}
+
+function rejectReview(id) {
+    if (confirm('Reject and delete this review?')) {
+        fetch('{{ url_for("admin.reject_review", id=0) }}'.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            }
+        }).then(r => r.json()).then(data => {
+            if (data.success) location.reload();
+        });
+    }
+}
+</script>
+{% endblock %}

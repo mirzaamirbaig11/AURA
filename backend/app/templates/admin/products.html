@@ -1,0 +1,155 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-uppercase mb-0" style="letter-spacing: 3px;">Products</h2>
+        <a href="{{ url_for('admin.add_product') }}" class="btn btn-aura">
+            <i class="fas fa-plus me-2"></i> Add Product
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card bg-dark border mb-4" style="border-color: var(--aura-gray);">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" value="{{ search }}" placeholder="Product name...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-aura w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="card bg-dark border" style="border-color: var(--aura-gray);">
+        <div class="card-body p-0">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in pagination.items %}
+                        {% set primary_img = product_images.get(product.id) %}
+                        <tr>
+                            <td>
+                                {% if primary_img %}
+                                <img src="{{ url_for('static', filename='uploads/products/' + primary_img) }}" class="product-image-thumb" alt="{{ product.name }}">
+                                {% else %}
+                                <div class="product-image-thumb d-flex align-items-center justify-content-center bg-dark">No Image</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin.edit_product', id=product.id) }}" class="text-decoration-none text-white fw-bold">{{ product.name }}</a>
+                            </td>
+                            <td>{{ product.category.name if product.category else 'N/A' }}</td>
+                            <td>
+                                <span class="fw-bold text-danger">₹{{ (product.discounted_price)|inr }}</span>
+                                {% if product.original_price > product.discounted_price %}
+                                <br><small class="text-muted text-decoration-line-through">₹{{ (product.original_price)|inr }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set total_stock = product.inventory | sum(attribute='quantity') %}
+                                <span class="{% if total_stock == 0 %}text-danger{% elif total_stock < 10 %}text-warning{% else %}text-success{% endif %} fw-bold">{{ total_stock }}</span>
+                            </td>
+                            <td>
+                                <span class="badge {% if product.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if product.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                                {% if product.is_featured %}
+                                <span class="badge bg-warning text-dark ms-1">Featured</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('admin.edit_product', id=product.id) }}" class="btn btn-outline-light" title="Edit"><i class="fas fa-edit"></i></a>
+                                    <form method="POST" action="{{ url_for('admin.delete_product', id=product.id) }}" class="d-inline" onsubmit="return confirm('Delete this product?')">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav class="p-3 border-top" style="border-color: var(--aura-gray);">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.products', page=pagination.prev_num, q=search, category=category_id, status=status) }}">Previous</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    {% endif %}
+
+                    {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                        {% if p %}
+                            {% if p == pagination.page %}
+                                <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin.products', page=p, q=search, category=category_id, status=status) }}">{{ p }}</a>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.products', page=pagination.next_num, q=search, category=category_id, status=status) }}">Next</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                <h4>No products found</h4>
+                <a href="{{ url_for('admin.add_product') }}" class="btn btn-aura mt-2">Add First Product</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

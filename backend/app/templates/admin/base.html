@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="any">
+    <title>{% block title %}AURA Admin Dashboard{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar" id="sidebar">
+            <div class="p-4 border-bottom" style="border-color: var(--aura-gray);">
+                <a href="{{ url_for('admin.dashboard') }}" class="text-decoration-none">
+                    <span class="brand-lockup"><img src="{{ url_for('static', filename='images/logo.png') }}" alt="AURA logo" class="brand-mark" width="42" height="42"><span class="aura-logo fs-3">AURA</span></span>
+                    <small class="d-block text-muted mt-1">Admin Dashboard</small>
+                </a>
+            </div>
+            <nav class="p-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'products' in request.endpoint %}active{% endif %}" href="{{ url_for('admin.products') }}">
+                            <i class="fas fa-box me-2"></i> Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'categories' in request.endpoint %}active{% endif %}" href="{{ url_for('admin.categories') }}">
+                            <i class="fas fa-tags me-2"></i> Categories
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'orders' in request.endpoint %}active{% endif %}" href="{{ url_for('admin.orders') }}">
+                            <i class="fas fa-shopping-bag me-2"></i> Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'customers' in request.endpoint %}active{% endif %}" href="{{ url_for('admin.customers') }}">
+                            <i class="fas fa-users me-2"></i> Customers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'inventory' in request.endpoint %}active{% endif %}" href="{{ url_for('admin.inventory') }}">
+                            <i class="fas fa-warehouse me-2"></i> Inventory
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'coupon' in request.endpoint %}active{% endif %}" href="{{ url_for('admin.coupons') }}">
+                            <i class="fas fa-ticket me-2"></i> Coupons
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'review' in request.endpoint %}active{% endif %}" href="{{ url_for('admin.reviews') }}">
+                            <i class="fas fa-star me-2"></i> Reviews
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'audit' in request.endpoint %}active{% endif %}" href="{{ url_for('admin.audit_logs') }}">
+                            <i class="fas fa-clock-rotate-left me-2"></i> Audit Logs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'settings' in request.endpoint %}active{% endif %}" href="{{ url_for('admin.settings') }}">
+                            <i class="fas fa-cog me-2"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="p-3 border-top" style="border-color: var(--aura-gray);">
+                <a href="{{ url_for('frontend.index') }}" class="btn btn-aura-outline w-100 mb-2">
+                    <i class="fas fa-external-link-alt me-2"></i> View Store
+                </a>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light w-100">
+                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+        <main class="admin-main flex-grow-1">
+            <!-- Mobile top bar -->
+            <div class="admin-topbar d-lg-none">
+                <button class="btn btn-ghost" id="sidebar-toggle" type="button" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AURA" width="36" height="36" style="border-radius:50%;">
+                <a href="{{ url_for('frontend.index') }}" class="btn btn-ghost" aria-label="View store"><i class="fas fa-store"></i></a>
+            </div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="px-4 pt-4">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                                <i class="fas {{ {'success': 'fa-circle-check', 'danger': 'fa-circle-exclamation', 'warning': 'fa-triangle-exclamation'}.get(category, 'fa-circle-info') }}"></i>
+                                <div>{{ message }}</div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    window.AURA_CSRF = "{{ csrf_token() }}";
+    (function () {
+        // Send the CSRF token with every same-origin POST/PUT/DELETE made via fetch or jQuery
+        var _fetch = window.fetch;
+        window.fetch = function (input, init) {
+            init = init || {};
+            var method = (init.method || 'GET').toUpperCase();
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            var sameOrigin = !/^https?:\/\//i.test(url) || url.indexOf(location.origin) === 0;
+            if (method !== 'GET' && sameOrigin) {
+                var h = new Headers(init.headers || {});
+                if (!h.has('X-CSRFToken')) h.set('X-CSRFToken', window.AURA_CSRF);
+                init.headers = h;
+                if (!init.credentials) init.credentials = 'same-origin';
+            }
+            return _fetch(input, init);
+        };
+        if (window.jQuery) {
+            jQuery.ajaxSetup({ headers: { 'X-CSRFToken': window.AURA_CSRF } });
+            jQuery.ajaxPrefilter(function (o) { if (typeof o.data === 'string' && /^\s*[\[{]/.test(o.data)) o.contentType = 'application/json'; });
+        }
+    })();
+    </script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body p-5 text-center">
+                    <div class="mb-4">
+                        <i class="fab fa-cc-stripe fa-4x" style="color: #635bff;"></i>
+                    </div>
+                    <h2 class="fw-bold mb-3">Complete Your Payment</h2>
+                    <p class="text-muted mb-4">Order <strong>{{ order.order_number }}</strong> - ₹{{ (order.total_amount)|inr }}</p>
+
+                    <form action="{{ url_for('payment.payment_success', order_id=order.id) }}" method="POST" id="payment-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div id="payment-element" class="mb-4"></div>
+                        <button type="submit" id="submit-btn" class="btn btn-aura w-100 btn-lg fw-bold py-3"
+                                disabled>
+                            <span id="submit-text">Pay ₹{{ (order.total_amount)|inr }}</span>
+                            <span id="submit-loading" class="d-none"><i class="fas fa-spinner fa-spin me-2"></i>Processing...</span>
+                        </button>
+                    </form>
+
+                    <div class="mt-4">
+                        <a href="{{ url_for('payment.payment_cancel', order_id=order.id) }}" class="text-muted">
+                            <i class="fas fa-arrow-left me-1"></i>Cancel and return to order
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">Order Summary</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span>₹{{ (order.subtotal)|inr }}</span>
+                    </div>
+                    {% if order.discount_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Discount</span>
+                        <span>-₹{{ (order.discount_amount)|inr }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Shipping</span>
+                        <span>{% if order.shipping_charge == 0 %}Free{% else %}₹{{ (order.shipping_charge)|inr }}{% endif %}</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold fs-5" style="border-top: 2px solid var(--aura-gray); padding-top: 10px;">
+                        <span>Total</span>
+                        <span style="color: var(--aura-red);">₹{{ (order.total_amount)|inr }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stripe = Stripe('{{ stripe_publishable_key }}');
+    const clientSecret = '{{ client_secret }}';
+
+    const appearance = {
+        theme: 'stripe',
+        variables: {
+            colorPrimary: '#e60000',
+            colorBackground: '#0d0d0d',
+            colorText: '#ffffff',
+            colorDanger: '#ff4444',
+            fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
+            spacingUnit: '4px',
+            borderRadius: '8px'
+        },
+        rules: {
+            '.Input': {
+                border: '1px solid #333',
+                boxShadow: 'none',
+                backgroundColor: '#1a1a1a',
+                color: '#ffffff'
+            },
+            '.Input:focus': {
+                border: '1px solid #e60000',
+                boxShadow: '0 0 0 2px rgba(230, 0, 0, 0.2)'
+            },
+            '.Label': {
+                color: '#cccccc',
+                fontWeight: '500'
+            },
+            '.Tab': {
+                border: '1px solid #333'
+            },
+            '.Tab--selected': {
+                backgroundColor: '#e60000',
+                color: '#ffffff'
+            }
+        }
+    };
+
+    const elements = stripe.elements({ appearance, clientSecret });
+    const paymentElement = elements.create('payment');
+    paymentElement.mount('#payment-element');
+
+    const form = document.getElementById('payment-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const submitText = document.getElementById('submit-text');
+    const submitLoading = document.getElementById('submit-loading');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        submitBtn.disabled = true;
+        submitText.classList.add('d-none');
+        submitLoading.classList.remove('d-none');
+
+        const { error } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+                return_url: window.location.origin + '{{ url_for("payment.payment_success", order_id=order.id) }}',
+            },
+        });
+
+        if (error) {
+            submitBtn.disabled = false;
+            submitText.classList.remove('d-none');
+            submitLoading.classList.add('d-none');
+            showToast(error.message || 'Payment failed. Please try again.');
+        }
+    });
+});
+</script>
+{% endblock %}

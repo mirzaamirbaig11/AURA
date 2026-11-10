@@ -1,0 +1,183 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-uppercase mb-0" style="letter-spacing: 3px;">Dashboard</h2>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="d-flex align-items-center">
+                    <div class="icon me-3"><i class="fas fa-box text-white"></i></div>
+                    <div>
+                        <div class="value">{{ stats.total_products }}</div>
+                        <div class="label">Total Products</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="d-flex align-items-center">
+                    <div class="icon me-3"><i class="fas fa-tags text-white"></i></div>
+                    <div>
+                        <div class="value">{{ stats.total_categories }}</div>
+                        <div class="label">Categories</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="d-flex align-items-center">
+                    <div class="icon me-3"><i class="fas fa-users text-white"></i></div>
+                    <div>
+                        <div class="value">{{ stats.total_customers }}</div>
+                        <div class="label">Customers</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="d-flex align-items-center">
+                    <div class="icon me-3"><i class="fas fa-shopping-bag text-white"></i></div>
+                    <div>
+                        <div class="value">{{ stats.total_orders }}</div>
+                        <div class="label">Total Orders</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card border-danger">
+                <div class="d-flex align-items-center">
+                    <div class="icon me-3"><i class="fas fa-clock text-white"></i></div>
+                    <div>
+                        <div class="value text-warning">{{ stats.pending_orders }}</div>
+                        <div class="label">Pending Orders</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card border-success">
+                <div class="d-flex align-items-center">
+                    <div class="icon me-3"><i class="fas fa-check-circle text-white"></i></div>
+                    <div>
+                        <div class="value text-success">{{ stats.completed_orders }}</div>
+                        <div class="label">Completed Orders</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card border-primary">
+                <div class="d-flex align-items-center">
+                    <div class="icon me-3"><i class="fas fa-dollar-sign text-white"></i></div>
+                    <div>
+                        <div class="value text-primary">₹{{ "{:,.2f}".format(stats.total_sales) }}</div>
+                        <div class="label">Total Sales</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Recent Orders -->
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card bg-dark border" style="border-color: var(--aura-gray);">
+                <div class="card-header bg-transparent border-secondary">
+                    <h5 class="fw-bold text-uppercase mb-0" style="letter-spacing: 2px;">Sales Overview (Last 7 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card bg-dark border" style="border-color: var(--aura-gray);">
+                <div class="card-header bg-transparent border-secondary d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-uppercase mb-0" style="letter-spacing: 2px;">Recent Orders</h5>
+                    <a href="{{ url_for('admin.orders') }}" class="btn btn-aura-outline btn-sm">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Customer</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td><a href="{{ url_for('admin.order_detail', id=order.id) }}" class="text-decoration-none">{{ order.order_number }}</a></td>
+                                    <td>{{ order.customer_name }}</td>
+                                    <td class="fw-bold">₹{{ (order.total_amount)|inr }}</td>
+                                    <td>
+                                        <span class="badge {% if order.status == 'Delivered' %}bg-success{% elif order.status == 'Cancelled' %}bg-danger{% elif order.status == 'Shipped' %}bg-primary{% elif order.status == 'Processing' %}bg-info{% elif order.status == 'Confirmed' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                            {{ order.status }}
+                                        </span>
+                                    </td>
+                                    <td class="small text-muted">{{ order.created_at.strftime('%b %d, %Y') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const ctx = document.getElementById('salesChart').getContext('2d');
+const salesData = {{ sales_data | tojson }};
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: salesData.map(d => d.date),
+        datasets: [{
+            label: 'Sales ($)',
+            data: salesData.map(d => d.amount),
+            borderColor: '#e60000',
+            backgroundColor: 'rgba(230, 0, 0, 0.1)',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#e60000',
+            pointBorderColor: '#fff',
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            x: { grid: { display: false }, ticks: { color: '#888' } },
+            y: { grid: { color: '#333' }, ticks: { color: '#888', callback: v => '$' + v } }
+        }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

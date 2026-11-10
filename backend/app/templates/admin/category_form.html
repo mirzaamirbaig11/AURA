@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-uppercase mb-0" style="letter-spacing: 3px;">{{ 'Edit' if category else 'Add' }} Category</h2>
+        <a href="{{ url_for('admin.categories') }}" class="btn btn-aura-outline">
+            <i class="fas fa-arrow-left me-2"></i> Back to List
+        </a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="card bg-dark border" style="border-color: var(--aura-gray); max-width: 700px;">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="card-body p-4">
+            <div class="mb-3">
+                <label class="form-label">Category Name *</label>
+                <input type="text" name="name" class="form-control" value="{{ category.name if category else '' }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control" rows="4">{{ category.description if category else '' }}</textarea>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if category and category.is_active %}checked{% elif not category %}checked{% endif %}>
+                        <label class="form-check-label" for="isActive">Active</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Category Image</label>
+                <input type="file" name="image" class="form-control" accept="image/*">
+                <div class="form-text">Recommended: 400x400px (1:1 ratio). Max 16MB.</div>
+            </div>
+
+            {% if category and category.image_filename %}
+            <div class="mb-3">
+                <label class="form-label">Current Image</label>
+                <img src="{{ url_for('static', filename='uploads/categories/' + category.image_filename) }}" class="img-fluid" style="max-width: 200px;" alt="{{ category.name }}">
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-aura">
+                    <i class="fas fa-save me-2"></i> {{ 'Update' if category else 'Create' }} Category
+                </button>
+                <a href="{{ url_for('admin.categories') }}" class="btn btn-aura-outline">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

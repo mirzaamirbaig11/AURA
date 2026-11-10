@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-wrap">
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-sm-10 col-md-8 col-lg-6">
+            <div class="aura-panel p-4 p-md-5">
+                <div>
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="AURA" width="84" height="84" class="brand-mark-lg">
+                        <h2 class="mt-3 mb-1">Create your account</h2>
+                        <p class="text-muted mb-0">Join AURA for faster checkout and exclusive drops.</p>
+                    </div>
+                    <form method="POST">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label" for="reg-name">Full Name</label>
+                            <input type="text" id="reg-name" name="name" class="form-control" placeholder="Your name" autocomplete="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="reg-email">Email</label>
+                            <input type="email" id="reg-email" name="email" class="form-control" placeholder="you@example.com" autocomplete="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="reg-phone">Phone Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text">+91</span>
+                                <input type="tel" id="reg-phone" name="phone" class="form-control" placeholder="10-digit mobile" pattern="[0-9]{10}" inputmode="numeric" autocomplete="tel-national">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="reg-password">Password</label>
+                            <input type="password" id="reg-password" name="password" class="form-control" placeholder="At least 8 characters" autocomplete="new-password" required minlength="6">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="reg-confirm">Confirm Password</label>
+                            <input type="password" id="reg-confirm" name="confirm" class="form-control" placeholder="Re-enter password" autocomplete="new-password" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-aura w-100 btn-lg">Create Account</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <span class="text-muted">Already have an account? </span>
+                        <a href="{{ url_for('auth.login') }}" class="text-danger">Log in</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</section>
+{% endblock %}
